@@ -1,9 +1,9 @@
 package com.taskforge.model
 
 enum class ExecutionStatus {
-    PENDING,
+    CREATED,
     RUNNING,
-    COMPLETED,
+    SUCCESS,
     FAILED,
     CANCELLED
 }

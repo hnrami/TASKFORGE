@@ -1,9 +1,15 @@
 package com.taskforge.handler
 
 /**
- * Registry placeholder for TaskHandler implementations.
- * Implementation will manage handler registrations and lookups.
+ * Registry for TaskHandler implementations.
+ * The engine will resolve handlers by task type through this registry.
  */
 class TaskHandlerRegistry {
-    // TODO: add registration and lookup methods
+    private val handlers: MutableMap<String, TaskHandler> = mutableMapOf()
+
+    fun register(handler: TaskHandler) {
+        handlers[handler.type()] = handler
+    }
+
+    fun getHandler(type: String): TaskHandler? = handlers[type]
 }

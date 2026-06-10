@@ -2,8 +2,10 @@ package com.taskforge.model
 
 enum class TaskStatus {
     PENDING,
-    IN_PROGRESS,
+    RUNNING,
     SUCCESS,
     FAILED,
-    RETRYING
+    SKIPPED,
+    WAITING_APPROVAL,
+    CANCELLED
 }

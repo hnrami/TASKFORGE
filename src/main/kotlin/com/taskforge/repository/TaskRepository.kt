@@ -1,6 +1,11 @@
 package com.taskforge.repository
 
+import com.taskforge.model.TaskExecution
+
 /**
- * Placeholder for task execution persistence operations.
+ * Repository for persisting task execution records.
  */
-interface TaskRepository
+interface TaskRepository {
+    fun save(execution: TaskExecution)
+    fun findById(id: String): TaskExecution?
+}

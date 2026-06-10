@@ -1,7 +1,10 @@
 package com.taskforge.model
 
-abstract class TaskDefinition(
-    open val id: String,
-    open val type: String,
-    open val name: String? = null
+data class TaskDefinition(
+    val id: String,
+    val type: String,
+    val name: String? = null,
+    val config: Map<String, Any?> = emptyMap(),
+    val dependsOn: List<String> = emptyList(),
+    val retryPolicy: RetryPolicy? = null
 )

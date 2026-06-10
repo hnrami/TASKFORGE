@@ -1,7 +1,13 @@
 package com.taskforge.repository
 
+import com.taskforge.model.WorkflowDefinition
+
 /**
- * Placeholder for workflow persistence operations.
- * Concrete repository interfaces will be added later.
+ * Repository for persisting workflow definitions.
  */
-interface WorkflowRepository
+interface WorkflowRepository {
+    fun save(definition: WorkflowDefinition)
+    fun findById(id: String): WorkflowDefinition?
+    fun findAll(): List<WorkflowDefinition>
+    fun delete(id: String)
+}

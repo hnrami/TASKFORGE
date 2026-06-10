@@ -6,9 +6,11 @@ import com.taskforge.model.TaskResult
 
 /**
  * Contract for all task handlers.
- * Implementations should handle a concrete TaskDefinition subtype.
+ * Task handlers are registered by type and executed through the engine without
+ * any concrete task-type logic inside the execution engine.
  */
-interface TaskHandler<T : TaskDefinition> {
-    fun handle(definition: T, context: TaskContext): TaskResult
-    fun supports(type: String): Boolean
+interface TaskHandler {
+    fun type(): String
+    fun execute(definition: TaskDefinition, context: TaskContext): TaskResult
+    fun cancel()
 }
