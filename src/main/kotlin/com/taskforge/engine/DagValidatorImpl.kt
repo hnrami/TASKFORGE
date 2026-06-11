@@ -18,6 +18,7 @@ class DagValidatorImpl(private val handlerRegistry: TaskHandlerRegistry) : DagVa
             return // Empty workflows are valid
         }
 
+        checkDuplicateTaskIds(definition)
         // Check for cycles using DFS
         checkForCycles(definition)
         
@@ -26,6 +27,14 @@ class DagValidatorImpl(private val handlerRegistry: TaskHandlerRegistry) : DagVa
         
         // Check for unregistered task types
         checkTaskTypes(definition)
+    }
+
+    private fun checkDuplicateTaskIds(definition: WorkflowDefinition) {
+        val duplicate = definition.tasks.groupingBy { it.id }.eachCount()
+            .entries.firstOrNull { it.value > 1 }
+        if (duplicate != null) {
+            throw TaskForgeException("Duplicate task id: ${duplicate.key}")
+        }
     }
 
     private fun checkForCycles(definition: WorkflowDefinition) {

@@ -155,6 +155,22 @@ class DagValidatorTest {
 
         validator.validate(definition) // Should not throw
     }
+
+    @Test
+    @DisplayName("should reject duplicate task ids with clear error")
+    fun testDuplicateTaskIds() {
+        val definition = WorkflowDefinition(
+            id = "duplicate",
+            name = "Duplicate",
+            tasks = listOf(
+                TaskDefinition("same", "mock"),
+                TaskDefinition("same", "mock")
+            )
+        )
+
+        val error = assertFailsWith<TaskForgeException> { validator.validate(definition) }
+        kotlin.test.assertTrue(error.message.orEmpty().contains("Duplicate task id: same"))
+    }
 }
 
 @DisplayName("DAG Scheduler Tests")

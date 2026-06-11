@@ -6,10 +6,9 @@ import com.taskforge.handler.impl.HttpTaskHandler
 import com.taskforge.handler.impl.ScriptTaskHandler
 import com.taskforge.handler.impl.NotificationTaskHandler
 import com.taskforge.handler.impl.DatabaseTaskHandler
+import com.taskforge.handler.impl.ApprovalTaskHandler
 import com.taskforge.repository.WorkflowRepository
 import com.taskforge.repository.ExecutionRepository
-import com.taskforge.repository.impl.InMemoryWorkflowRepository
-import com.taskforge.repository.impl.InMemoryExecutionRepository
 import com.taskforge.service.WorkflowService
 import com.taskforge.service.ExecutionService
 import com.taskforge.service.impl.WorkflowServiceImpl
@@ -33,18 +32,9 @@ class TaskForgeConfiguration {
         registry.register(ScriptTaskHandler())
         registry.register(NotificationTaskHandler())
         registry.register(DatabaseTaskHandler())
+        registry.register(ApprovalTaskHandler())
         
         return registry
-    }
-
-    @Bean
-    fun workflowRepository(): WorkflowRepository {
-        return InMemoryWorkflowRepository()
-    }
-
-    @Bean
-    fun executionRepository(): ExecutionRepository {
-        return InMemoryExecutionRepository()
     }
 
     @Bean
@@ -83,8 +73,11 @@ class TaskForgeConfiguration {
     }
 
     @Bean
-    fun workflowService(workflowRepository: WorkflowRepository): WorkflowService {
-        return WorkflowServiceImpl(workflowRepository)
+    fun workflowService(
+        workflowRepository: WorkflowRepository,
+        dagValidator: DagValidator
+    ): WorkflowService {
+        return WorkflowServiceImpl(workflowRepository, dagValidator)
     }
 
     @Bean

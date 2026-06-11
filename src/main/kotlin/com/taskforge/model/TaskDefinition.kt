@@ -6,5 +6,7 @@ data class TaskDefinition(
     val name: String? = null,
     val config: Map<String, Any?> = emptyMap(),
     val dependsOn: List<String> = emptyList(),
-    val retryPolicy: RetryPolicy? = null
+    val retryPolicy: RetryPolicy? = null,
+    val timeoutSeconds: Long? = null,
+    val condition: String? = null
 )

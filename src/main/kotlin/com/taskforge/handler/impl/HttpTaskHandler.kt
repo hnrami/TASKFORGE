@@ -1,59 +1,61 @@
 package com.taskforge.handler.impl
 
 import com.taskforge.handler.TaskHandler
-import com.taskforge.model.TaskDefinition
 import com.taskforge.model.TaskContext
+import com.taskforge.model.TaskDefinition
 import com.taskforge.model.TaskResult
 import com.taskforge.model.TaskStatus
+import java.net.URI
+import java.net.http.HttpClient
+import java.net.http.HttpRequest
+import java.net.http.HttpResponse
+import java.time.Duration
+import java.util.concurrent.CompletableFuture
+import java.util.concurrent.ConcurrentHashMap
 
-/**
- * Simple HTTP task handler that makes HTTP requests.
- * Task config expected:
- * - url (String): HTTP endpoint
- * - method (String): GET, POST, PUT, DELETE (default: GET)
- * - body (String, optional): Request body for POST/PUT
- * - timeout (Int, optional): Request timeout in ms (default: 5000)
- */
 class HttpTaskHandler : TaskHandler {
+    private val client = HttpClient.newBuilder().followRedirects(HttpClient.Redirect.NORMAL).build()
+    private val requests = ConcurrentHashMap.newKeySet<CompletableFuture<*>>()
 
     override fun type(): String = "http"
 
     override fun execute(definition: TaskDefinition, context: TaskContext): TaskResult {
+        val url = definition.config["url"] as? String
+            ?: return TaskResult(TaskStatus.FAILED, message = "Missing required config: url")
+        val method = (definition.config["method"] as? String)?.uppercase() ?: "GET"
+        val body = definition.config["body"]?.toString()
+        val timeoutMillis = (definition.config["timeoutMillis"] as? Number)?.toLong() ?: 5_000
+        val builder = HttpRequest.newBuilder(URI.create(url)).timeout(Duration.ofMillis(timeoutMillis))
+        @Suppress("UNCHECKED_CAST")
+        (definition.config["headers"] as? Map<String, Any?>)?.forEach { (key, value) ->
+            builder.header(key, value.toString())
+        }
+        val publisher = if (body == null) HttpRequest.BodyPublishers.noBody()
+        else HttpRequest.BodyPublishers.ofString(body)
+        val request = builder.method(method, publisher).build()
+        val future = client.sendAsync(request, HttpResponse.BodyHandlers.ofString())
+        requests.add(future)
         return try {
-            val url = definition.config["url"] as? String
-                ?: return TaskResult(
-                    status = TaskStatus.FAILED,
-                    output = emptyMap(),
-                    message = "Missing required config: url"
+            val response = future.join()
+            val output = mapOf("statusCode" to response.statusCode(), "responseBody" to response.body())
+            when (response.statusCode()) {
+                in 200..299 -> TaskResult(TaskStatus.SUCCESS, output)
+                in 500..599 -> TaskResult(
+                    TaskStatus.FAILED,
+                    output,
+                    "HTTP ${response.statusCode()}",
+                    retryable = true
                 )
-
-            val method = (definition.config["method"] as? String)?.uppercase() ?: "GET"
-            val body = definition.config["body"] as? String
-            val timeout = (definition.config["timeout"] as? Number)?.toInt() ?: 5000
-
-            // In a real implementation, use okhttp or similar HTTP client
-            // For now, we'll return a mock success response
-            val output = mapOf(
-                "statusCode" to 200,
-                "body" to "Mock HTTP response from $url",
-                "method" to method
-            )
-
-            TaskResult(
-                status = TaskStatus.SUCCESS,
-                output = output,
-                message = "HTTP $method request completed successfully"
-            )
-        } catch (e: Exception) {
-            TaskResult(
-                status = TaskStatus.FAILED,
-                output = emptyMap(),
-                message = "HTTP task failed: ${e.message}"
-            )
+                else -> TaskResult(TaskStatus.FAILED, output, "HTTP ${response.statusCode()}")
+            }
+        } catch (exception: Exception) {
+            TaskResult(TaskStatus.FAILED, message = "HTTP request failed: ${exception.message}", retryable = true)
+        } finally {
+            requests.remove(future)
         }
     }
 
     override fun cancel() {
-        // Cancel pending HTTP requests
+        requests.forEach { it.cancel(true) }
     }
 }

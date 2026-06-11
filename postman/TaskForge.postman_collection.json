@@ -1,0 +1,144 @@
+{
+  "info": {
+    "_postman_id": "10ca92f0-aadb-42eb-8a46-34465882a813",
+    "name": "TaskForge API",
+    "description": "Documented TaskForge API validation suite. The current Task 1 foundation contains no REST controllers, so these requests will return 404 until later implementation tasks add the APIs.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:8080" },
+    { "key": "workflowId", "value": "" },
+    { "key": "executionId", "value": "" }
+  ],
+  "item": [
+    {
+      "name": "Workflow APIs",
+      "item": [
+        {
+          "name": "Create Valid Workflow",
+          "event": [{
+            "listen": "test",
+            "script": { "exec": [
+              "pm.test('Workflow created', () => pm.expect(pm.response.code).to.be.oneOf([200, 201]));",
+              "const body = pm.response.json();",
+              "pm.expect(body.id).to.exist;",
+              "pm.environment.set('workflowId', body.id);"
+            ]}
+          }],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"deployment\",\n  \"tasks\": [\n    {\n      \"id\": \"build\",\n      \"type\": \"script\",\n      \"config\": { \"command\": \"echo build\" },\n      \"retryPolicy\": { \"attempts\": 3, \"delaySeconds\": 1 },\n      \"timeoutSeconds\": 30\n    },\n    {\n      \"id\": \"deploy\",\n      \"type\": \"http\",\n      \"config\": { \"url\": \"https://example.com\", \"method\": \"GET\" },\n      \"dependsOn\": [\"build\"]\n    }\n  ]\n}"
+            },
+            "url": "{{baseUrl}}/api/workflows"
+          }
+        },
+        {
+          "name": "Get Workflow",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Workflow returned', () => pm.response.to.have.status(200));",
+            "pm.test('Correct workflow ID', () => pm.expect(pm.response.json().id).to.eql(pm.environment.get('workflowId')));"
+          ]}}],
+          "request": { "method": "GET", "url": "{{baseUrl}}/api/workflows/{{workflowId}}" }
+        }
+      ]
+    },
+    {
+      "name": "Workflow Validation",
+      "item": [
+        {
+          "name": "Reject Cycle",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Cycle rejected', () => pm.expect(pm.response.code).to.be.oneOf([400, 422]));"
+          ]}}],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"name\": \"cyclic\",\n  \"tasks\": [\n    { \"id\": \"A\", \"type\": \"script\", \"dependsOn\": [\"C\"] },\n    { \"id\": \"B\", \"type\": \"script\", \"dependsOn\": [\"A\"] },\n    { \"id\": \"C\", \"type\": \"script\", \"dependsOn\": [\"B\"] }\n  ]\n}" },
+            "url": "{{baseUrl}}/api/workflows"
+          }
+        },
+        {
+          "name": "Reject Missing Dependency",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Missing dependency rejected', () => pm.expect(pm.response.code).to.be.oneOf([400, 422]));"
+          ]}}],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"name\": \"missing-dependency\",\n  \"tasks\": [\n    { \"id\": \"deploy\", \"type\": \"http\", \"dependsOn\": [\"build\"] }\n  ]\n}" },
+            "url": "{{baseUrl}}/api/workflows"
+          }
+        },
+        {
+          "name": "Reject Unknown Task Type",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Unknown task type rejected', () => pm.expect(pm.response.code).to.be.oneOf([400, 422]));"
+          ]}}],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"name\": \"unknown-handler\",\n  \"tasks\": [\n    { \"id\": \"custom\", \"type\": \"unknown\" }\n  ]\n}" },
+            "url": "{{baseUrl}}/api/workflows"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Execution APIs",
+      "item": [
+        {
+          "name": "Start Execution",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Execution started', () => pm.expect(pm.response.code).to.be.oneOf([200, 201, 202]));",
+            "const body = pm.response.json();",
+            "pm.expect(body.id).to.exist;",
+            "pm.environment.set('executionId', body.id);"
+          ]}}],
+          "request": { "method": "POST", "url": "{{baseUrl}}/api/workflows/{{workflowId}}/executions" }
+        },
+        {
+          "name": "Get Execution",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Execution returned', () => pm.response.to.have.status(200));",
+            "pm.test('Execution has status', () => pm.expect(pm.response.json().status).to.exist);"
+          ]}}],
+          "request": { "method": "GET", "url": "{{baseUrl}}/api/executions/{{executionId}}" }
+        },
+        {
+          "name": "Cancel Execution",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Cancellation accepted', () => pm.expect(pm.response.code).to.be.oneOf([200, 202, 204]));"
+          ]}}],
+          "request": { "method": "POST", "url": "{{baseUrl}}/api/executions/{{executionId}}/cancel" }
+        },
+        {
+          "name": "Approve Task",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Approval accepted', () => pm.expect(pm.response.code).to.be.oneOf([200, 202, 204]));"
+          ]}}],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"taskId\": \"approval\",\n  \"approver\": \"postman-user\",\n  \"approved\": true\n}" },
+            "url": "{{baseUrl}}/api/executions/{{executionId}}/approval"
+          }
+        },
+        {
+          "name": "Reject Approval",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Rejection accepted', () => pm.expect(pm.response.code).to.be.oneOf([200, 202, 204]));"
+          ]}}],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"taskId\": \"approval\",\n  \"approver\": \"postman-user\",\n  \"approved\": false\n}" },
+            "url": "{{baseUrl}}/api/executions/{{executionId}}/approval"
+          }
+        }
+      ]
+    }
+  ]
+}

@@ -2,13 +2,14 @@ package com.taskforge.repository.impl
 
 import com.taskforge.model.WorkflowExecution
 import com.taskforge.repository.ExecutionRepository
+import java.util.concurrent.ConcurrentHashMap
 
 /**
  * In-memory implementation of ExecutionRepository.
  * For production, replace with JPA repository backed by database.
  */
 class InMemoryExecutionRepository : ExecutionRepository {
-    private val executions = mutableMapOf<String, WorkflowExecution>()
+    private val executions = ConcurrentHashMap<String, WorkflowExecution>()
 
     override fun save(execution: WorkflowExecution) {
         executions[execution.id] = execution

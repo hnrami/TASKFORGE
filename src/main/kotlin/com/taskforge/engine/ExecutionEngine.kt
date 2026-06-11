@@ -8,4 +8,6 @@ import com.taskforge.model.WorkflowExecution
  */
 interface ExecutionEngine {
     fun startWorkflow(definition: WorkflowDefinition): WorkflowExecution
+    fun cancel(executionId: String): WorkflowExecution
+    fun resolveApproval(executionId: String, taskId: String, approved: Boolean): WorkflowExecution
 }

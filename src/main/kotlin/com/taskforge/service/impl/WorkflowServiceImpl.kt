@@ -4,11 +4,15 @@ import com.taskforge.model.WorkflowDefinition
 import com.taskforge.service.WorkflowService
 import com.taskforge.repository.WorkflowRepository
 import com.taskforge.exception.TaskForgeException
+import com.taskforge.engine.DagValidator
 
 /**
  * Service for managing workflow definitions.
  */
-class WorkflowServiceImpl(private val workflowRepository: WorkflowRepository) : WorkflowService {
+class WorkflowServiceImpl(
+    private val workflowRepository: WorkflowRepository,
+    private val dagValidator: DagValidator
+) : WorkflowService {
 
     override fun createWorkflow(definition: WorkflowDefinition) {
         // Validate workflow has ID
@@ -21,6 +25,7 @@ class WorkflowServiceImpl(private val workflowRepository: WorkflowRepository) : 
             throw TaskForgeException("Workflow with ID '${definition.id}' already exists")
         }
 
+        dagValidator.validate(definition)
         workflowRepository.save(definition)
     }
 

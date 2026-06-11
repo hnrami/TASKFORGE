@@ -31,4 +31,9 @@ class ExecutionServiceImpl(
     override fun getExecution(id: String): WorkflowExecution? {
         return executionRepository.findById(id)
     }
+
+    override fun cancelExecution(id: String): WorkflowExecution = executionEngine.cancel(id)
+
+    override fun resolveApproval(id: String, taskId: String, approved: Boolean): WorkflowExecution =
+        executionEngine.resolveApproval(id, taskId, approved)
 }

@@ -6,10 +6,10 @@ import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
 
 @RestController
-@RequestMapping("/api/executions")
+@RequestMapping("/api")
 class ExecutionController(private val executionService: ExecutionService) {
 
-    @PostMapping("/workflows/{workflowId}")
+    @PostMapping("/workflows/{workflowId}/executions")
     fun startExecution(@PathVariable workflowId: String): ResponseEntity<Any> {
         return try {
             val execution = executionService.startExecution(workflowId)
@@ -28,7 +28,7 @@ class ExecutionController(private val executionService: ExecutionService) {
         }
     }
 
-    @GetMapping("/{id}")
+    @GetMapping("/executions/{id}")
     fun getExecution(@PathVariable id: String): ResponseEntity<Any> {
         val execution = executionService.getExecution(id)
         return if (execution != null) {
@@ -49,7 +49,7 @@ class ExecutionController(private val executionService: ExecutionService) {
         }
     }
 
-    @GetMapping("/{id}/details")
+    @GetMapping("/executions/{id}/details")
     fun getExecutionDetails(@PathVariable id: String): ResponseEntity<Any> {
         val execution = executionService.getExecution(id)
         return if (execution != null) {
@@ -60,4 +60,15 @@ class ExecutionController(private val executionService: ExecutionService) {
             )
         }
     }
+
+    @PostMapping("/executions/{id}/cancel")
+    fun cancelExecution(@PathVariable id: String): ResponseEntity<Any> =
+        ResponseEntity.ok(executionService.cancelExecution(id))
+
+    @PostMapping("/executions/{id}/approval")
+    fun resolveApproval(
+        @PathVariable id: String,
+        @RequestBody request: ApprovalRequest
+    ): ResponseEntity<Any> =
+        ResponseEntity.ok(executionService.resolveApproval(id, request.taskId, request.approved))
 }

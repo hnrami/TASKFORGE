@@ -1,64 +1,64 @@
 package com.taskforge.handler.impl
 
 import com.taskforge.handler.TaskHandler
-import com.taskforge.model.TaskDefinition
 import com.taskforge.model.TaskContext
+import com.taskforge.model.TaskDefinition
 import com.taskforge.model.TaskResult
 import com.taskforge.model.TaskStatus
 import java.io.File
+import java.util.concurrent.CompletableFuture
+import java.util.concurrent.ConcurrentHashMap
 
-/**
- * Task handler for executing shell/PowerShell scripts.
- * Task config expected:
- * - command (String): The command or script to execute
- * - shell (String, optional): 'powershell', 'bash', 'cmd' (default: based on OS)
- * - workdir (String, optional): Working directory for execution
- */
 class ScriptTaskHandler : TaskHandler {
+    private val processes = ConcurrentHashMap.newKeySet<Process>()
 
     override fun type(): String = "script"
 
     override fun execute(definition: TaskDefinition, context: TaskContext): TaskResult {
+        val command = definition.config["command"] as? String
+            ?: return TaskResult(TaskStatus.FAILED, message = "Missing required config: command")
+        val shell = definition.config["shell"] as? String ?: defaultShell()
+        val processBuilder = ProcessBuilder(shellCommand(shell, command))
+        (definition.config["workdir"] as? String)?.let { processBuilder.directory(File(it)) }
+        val process = try {
+            processBuilder.start()
+        } catch (exception: Exception) {
+            return TaskResult(TaskStatus.FAILED, message = "Script start failed: ${exception.message}")
+        }
+        processes.add(process)
         return try {
-            val command = definition.config["command"] as? String
-                ?: return TaskResult(
-                    status = TaskStatus.FAILED,
-                    output = emptyMap(),
-                    message = "Missing required config: command"
-                )
-
-            val shell = definition.config["shell"] as? String
-            val workdir = definition.config["workdir"] as? String
-
-            // Determine shell based on OS or config
-            val shellCmd = shell ?: when {
-                System.getProperty("os.name").lowercase().contains("windows") -> "powershell"
-                else -> "bash"
-            }
-
-            // In a real implementation, would execute the script
-            // For now, return mock success
+            val stdout = CompletableFuture.supplyAsync { process.inputStream.bufferedReader().readText() }
+            val stderr = CompletableFuture.supplyAsync { process.errorStream.bufferedReader().readText() }
+            val exitCode = process.waitFor()
             val output = mapOf(
-                "exitCode" to 0,
-                "stdout" to "Script executed successfully",
-                "command" to command
+                "stdout" to stdout.join(),
+                "stderr" to stderr.join(),
+                "exitCode" to exitCode
             )
-
-            TaskResult(
-                status = TaskStatus.SUCCESS,
-                output = output,
-                message = "Script execution completed"
-            )
-        } catch (e: Exception) {
-            TaskResult(
-                status = TaskStatus.FAILED,
-                output = emptyMap(),
-                message = "Script execution failed: ${e.message}"
-            )
+            if (exitCode == 0) TaskResult(TaskStatus.SUCCESS, output)
+            else TaskResult(TaskStatus.FAILED, output, "Script exited with code $exitCode")
+        } catch (exception: InterruptedException) {
+            process.destroyForcibly()
+            Thread.currentThread().interrupt()
+            TaskResult(TaskStatus.FAILED, message = "Script execution interrupted")
+        } finally {
+            processes.remove(process)
         }
     }
 
     override fun cancel() {
-        // Terminate running script processes
+        processes.forEach {
+            it.destroy()
+            if (it.isAlive) it.destroyForcibly()
+        }
+    }
+
+    private fun defaultShell(): String =
+        if (System.getProperty("os.name").lowercase().contains("windows")) "powershell" else "bash"
+
+    private fun shellCommand(shell: String, command: String): List<String> = when (shell.lowercase()) {
+        "powershell", "pwsh" -> listOf(shell, "-NoProfile", "-Command", command)
+        "cmd" -> listOf("cmd", "/c", command)
+        else -> listOf(shell, "-c", command)
     }
 }
