@@ -1,0 +1,289 @@
+{
+  "info": {
+    "_postman_id": "9e6f3882-272b-458d-9b30-84561c2f304a",
+    "name": "sumbit-taskforce",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_exporter_id": "139487"
+  },
+  "item": [
+    {
+      "name": "1. Create Simple Workflow",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"name\": \"simple-deployment\",\n  \"tasks\": [\n    {\n      \"id\": \"build\",\n      \"type\": \"script\",\n      \"config\": {\n        \"command\": \"echo Building application\"\n      }\n    },\n    {\n      \"id\": \"test\",\n      \"type\": \"script\",\n      \"dependsOn\": [\n        \"build\"\n      ],\n      \"config\": {\n        \"command\": \"echo Running tests\"\n      }\n    },\n    {\n      \"id\": \"deploy\",\n      \"type\": \"notification\",\n      \"dependsOn\": [\n        \"test\"\n      ],\n      \"config\": {\n        \"message\": \"Deployment completed\"\n      }\n    }\n  ]\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "http://localhost:9090/api/workflows",
+          "protocol": "http",
+          "host": [
+            "localhost"
+          ],
+          "port": "9090",
+          "path": [
+            "api",
+            "workflows"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "2. Create Parallel DAG Workflow",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n    \"name\": \"parallel-release\",\n    \"tasks\": [\n        {\n            \"id\": \"build\",\n            \"type\": \"script\",\n            \"config\": {\n                \"command\": \"echo Build\"\n            }\n        },\n        {\n            \"id\": \"unit-test\",\n            \"type\": \"script\",\n            \"dependsOn\": [\n                \"build\"\n            ],\n            \"config\": {\n                \"command\": \"echo Unit Test\"\n            }\n        },\n        {\n            \"id\": \"security-test\",\n            \"type\": \"script\",\n            \"dependsOn\": [\n                \"build\"\n            ],\n            \"config\": {\n                \"command\": \"echo Security Test\"\n            }\n        },\n        {\n            \"id\": \"deploy\",\n            \"type\": \"notification\",\n            \"dependsOn\": [\n                \"unit-test\",\n                \"security-test\"\n            ],\n            \"config\": {\n                \"message\": \"Deploy completed\"\n            }\n        }\n    ]\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "http://localhost:9090/api/workflows",
+          "protocol": "http",
+          "host": [
+            "localhost"
+          ],
+          "port": "9090",
+          "path": [
+            "api",
+            "workflows"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "3. Start Execution",
+      "request": {
+        "method": "POST",
+        "header": [],
+        "url": {
+          "raw": "http://localhost:9090/api/workflows/104dcce0-6596-4133-9e18-60af4ff5c944/executions",
+          "protocol": "http",
+          "host": [
+            "localhost"
+          ],
+          "port": "9090",
+          "path": [
+            "api",
+            "workflows",
+            "104dcce0-6596-4133-9e18-60af4ff5c944",
+            "executions"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "3. Start Execution -DAG",
+      "request": {
+        "method": "POST",
+        "header": [],
+        "url": {
+          "raw": "http://localhost:9090/api/workflows/44d22f95-cf46-4e58-a727-b889b3286301/executions",
+          "protocol": "http",
+          "host": [
+            "localhost"
+          ],
+          "port": "9090",
+          "path": [
+            "api",
+            "workflows",
+            "44d22f95-cf46-4e58-a727-b889b3286301",
+            "executions"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "4.Get Execution Status",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "http://localhost:9090/api/executions/72ad7d3b-27f3-43d8-9b27-327422a5592f",
+          "protocol": "http",
+          "host": [
+            "localhost"
+          ],
+          "port": "9090",
+          "path": [
+            "api",
+            "executions",
+            "72ad7d3b-27f3-43d8-9b27-327422a5592f"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "5. Get Execution Details",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "http://localhost:9090/api/executions/ec3a415b-c4af-4df6-b3fb-a69d5c73d6b5/details",
+          "protocol": "http",
+          "host": [
+            "localhost"
+          ],
+          "port": "9090",
+          "path": [
+            "api",
+            "executions",
+            "ec3a415b-c4af-4df6-b3fb-a69d5c73d6b5",
+            "details"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "7. Missing Dependency Validation",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n\n\"name\":\"missing-dependency\",\n\n\"tasks\":[\n\n{\n\"id\":\"deploy\",\n\"type\":\"notification\",\n\"dependsOn\":[\"build\"]\n}\n\n]\n\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "http://localhost:8080/api/workflows",
+          "protocol": "http",
+          "host": [
+            "localhost"
+          ],
+          "port": "8080",
+          "path": [
+            "api",
+            "workflows"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "6. Invalid Cycle Validation",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n\"name\":\"invalid-cycle\",\n\n\"tasks\":[\n\n{\n\"id\":\"A\",\n\"type\":\"notification\",\n\"dependsOn\":[\"C\"]\n},\n\n{\n\"id\":\"B\",\n\"type\":\"notification\",\n\"dependsOn\":[\"A\"]\n},\n\n{\n\"id\":\"C\",\n\"type\":\"notification\",\n\"dependsOn\":[\"B\"]\n}\n\n]\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "http://localhost:8080/api/workflows",
+          "protocol": "http",
+          "host": [
+            "localhost"
+          ],
+          "port": "8080",
+          "path": [
+            "api",
+            "workflows"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "8. Approval Workflow",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n\"name\":\"approval-release\",\n\n\"tasks\":[\n\n{\n\"id\":\"build\",\n\"type\":\"script\",\n\"config\":{\n\"command\":\"echo build\"\n}\n},\n\n{\n\"id\":\"approval\",\n\"type\":\"approval\",\n\"dependsOn\":[\"build\"]\n},\n\n{\n\"id\":\"production\",\n\"type\":\"notification\",\n\"dependsOn\":[\"approval\"],\n\"config\":{\n\"message\":\"production deployed\"\n}\n}\n\n]\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "http://localhost:8080/api/workflows",
+          "protocol": "http",
+          "host": [
+            "localhost"
+          ],
+          "port": "8080",
+          "path": [
+            "api",
+            "workflows"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "9. Cancel Execution",
+      "request": {
+        "method": "POST",
+        "header": [],
+        "url": {
+          "raw": "http://localhost:9090/api/executions/ec3a415b-c4af-4df6-b3fb-a69d5c73d6b5/cancel",
+          "protocol": "http",
+          "host": [
+            "localhost"
+          ],
+          "port": "9090",
+          "path": [
+            "api",
+            "executions",
+            "ec3a415b-c4af-4df6-b3fb-a69d5c73d6b5",
+            "cancel"
+          ]
+        }
+      },
+      "response": []
+    }
+  ]
+}
